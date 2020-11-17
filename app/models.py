@@ -1,3 +1,5 @@
+#
+
 class PaginatedAPIMixin:
     @classmethod
     def to_collection_dict(cls, query, data, page, per_page, **kwargs):
@@ -8,12 +10,7 @@ class PaginatedAPIMixin:
                 'page': page,
                 'per_page': per_page,
                 'total_items': query().count()
-            },
-            # '_links': {
-            #     'self': url_for(endpoint, page=page, per_page=per_page, **kwargs),
-            #     'next': url_for(endpoint, page=page + 1, per_page=per_page, **kwargs) if next(resources, None) else None,
-            #     'prev': url_for(endpoint, page=page - 1, per_page=per_page, **kwargs) if resources.has_prev else None,
-            # }
+            }
         }
         return data
 
@@ -49,10 +46,8 @@ class Product(PaginatedAPIMixin):
             setattr(self, 'id', data['_id'])
         return self
 
-    @staticmethod
-    def to_response(data):
-        product = Product()
-        return product.from_dict(data).to_dict()
+    def to_response(self, data):
+        return self.from_dict(data).to_dict()
 
     def save_to_db(self, data, db_operations):
         self.from_dict(data)
