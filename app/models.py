@@ -1,30 +1,27 @@
-from app import mongo
-
-from flask import url_for
-
-
 class PaginatedAPIMixin:
-    @staticmethod
-    def to_collection_dict(query, page, per_page, endpoint, **kwargs):
-        resources = query.paginate(page, per_page, False)
+    @classmethod
+    def to_collection_dict(cls, query, data, page, per_page, **kwargs):
+        resources = query(data).skip(page * per_page).limit(per_page)
         data = {
-            'items': [item.to_dict() for item in resources.items()],
+            'items': [cls().to_response(item) for item in resources],
             '_meta': {
                 'page': page,
                 'per_page': per_page,
-                'total_pages': resources.pages,
-                'total_items': resources.total
+                'total_items': query().count()
             },
-            '_links': {
-                'self': url_for(endpoint, page=page, per_page=per_page, **kwargs),
-                'next': url_for(endpoint, page=page + 1, per_page=per_page, **kwargs) if resources.has_next else None,
-                'prev': url_for(endpoint, page=page - 1, per_page=per_page, **kwargs) if resources.has_prev else None,
-            }
+            # '_links': {
+            #     'self': url_for(endpoint, page=page, per_page=per_page, **kwargs),
+            #     'next': url_for(endpoint, page=page + 1, per_page=per_page, **kwargs) if next(resources, None) else None,
+            #     'prev': url_for(endpoint, page=page - 1, per_page=per_page, **kwargs) if resources.has_prev else None,
+            # }
         }
         return data
 
+    def to_response(self, data):
+        pass
 
-class Product:
+
+class Product(PaginatedAPIMixin):
     def __init__(self, title=None, description=None, params=None):
         self.id = None
         self.title = title
@@ -51,6 +48,11 @@ class Product:
         if '_id' in data:
             setattr(self, 'id', data['_id'])
         return self
+
+    @staticmethod
+    def to_response(data):
+        product = Product()
+        return product.from_dict(data).to_dict()
 
     def save_to_db(self, data, db_operations):
         self.from_dict(data)
