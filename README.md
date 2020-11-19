@@ -1,10 +1,10 @@
 # smart-design-test
 API writting by Flask using MongoDB
 
-For UNIX-system
+1. Create virtual environment directory ```virtualenv -p python3.8 venv```
+2. Activate venv ```source venv/bin/activate```
 1. Open Terminal, input ```pip3 install -r requirements.txt```<br>
-    Set environment variable:<br> 
-    ```export MONGO_URI={MONGO_URI}```<br>
+2. Set environment variable:```export MONGO_URI={MONGO_URI}```<br>
     
 2. Run application by command ```python3 run.py```
 
