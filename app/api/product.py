@@ -5,7 +5,7 @@ from app.models import Product
 from app.api import bp
 from app import mongo
 from app.api.errors import bad_request
-from utils.db_utils import form_query_data
+from utils.db_utils import get_query_from_data
 
 
 @bp.route('/product', methods=['POST'])
@@ -17,9 +17,9 @@ def create_product():
     :return:
     """
     db_operations = mongo.db.product
-    data = request.get_json() or {}
-    if 'title' not in data or 'title' not in data:
-        return bad_request('Must include title, price and type fields')
+    data = request.get_json(force=True) or {}
+    if 'title' not in data or 'description' not in data or 'params' not in data:
+        return bad_request('Must include title, description and params fields')
 
     new_product = Product()
     new_product.save_to_db(data, db_operations)
@@ -30,7 +30,7 @@ def create_product():
     return response
 
 
-@bp.route('/product/list', methods=['GET'])
+@bp.route('/product', methods=['GET'])
 def get_product_list():
     """
     Method for get list of product by title and/or params with pagination
@@ -40,7 +40,7 @@ def get_product_list():
     per_page = min(request.args.get('per_page', 10, type=int), 100)
     db_operations = mongo.db.product
     data = request.get_json() or {}
-    query_data = form_query_data(data)
+    query_data = get_query_from_data(data)
     query = db_operations.find
     result = Product().to_collection_dict(query, query_data, page, per_page)
     return jsonify(result)

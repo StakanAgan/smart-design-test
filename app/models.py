@@ -1,4 +1,4 @@
-#
+from collections import OrderedDict
 
 class PaginatedAPIMixin:
     @classmethod
@@ -29,13 +29,14 @@ class Product(PaginatedAPIMixin):
         return f'Product {self.title}'
 
     def to_dict(self):
-        data = {
+        data = OrderedDict({
             'title': self.title,
             'description': self.description,
             'params': {key: value for key, value in self.params.items()}
-        }
+        })
         if self.id:
             data.update({"id": str(self.id)})
+            data.move_to_end('id', last=False)
         return data
 
     def from_dict(self, data):

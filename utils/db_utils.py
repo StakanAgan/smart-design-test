@@ -1,4 +1,4 @@
-def form_query_data(data):
+def get_query_from_data(data):
     query_params = {}
     for key, value in data.items():
         if isinstance(value, str) or isinstance(value, float):
