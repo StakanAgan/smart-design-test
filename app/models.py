@@ -1,11 +1,12 @@
 from collections import OrderedDict
 
-from flask_pymongo import ObjectId
+import flask
+from flask_pymongo import ObjectId, MongoClient
 from flask import request, jsonify, url_for
 
-from app import mongo
 from static.text.api import text as t
 from app.errors import bad_request
+from config import Config
 
 
 PER_PAGE_DEFAULT = 10
@@ -16,13 +17,22 @@ DEFAULT_PAGE = 0
 class PaginatedAPIMixin:
     @classmethod
     def to_collection_dict(cls, query, data, page, per_page):
+        """
+        Method for make query to MongoDB with pagination and return
+        data in response
+        :param query:
+        :param data:
+        :param page:
+        :param per_page:
+        :return:
+        """
         resources = query(data).skip(page * per_page).limit(per_page)
         data = {
             'items': [cls().to_response(item) for item in resources],
             '_meta': {
                 'page': page,
                 'per_page': per_page,
-                'total_items': query().count()
+                'total_items': resources.count()
             }
         }
         return data
@@ -47,11 +57,11 @@ class Product(PaginatedAPIMixin):
         Method for product creation by request
         :return:
         """
+        mongo = MongoClient(Config.MONGO_URI)
         db_operations = mongo.db.product
         data = request.get_json(force=True) or {}
         if 'title' not in data or 'description' not in data or 'params' not in data:
             return bad_request(t['empty_field'])
-
         new_product = Product()
         if Product.params_is_valid(data):
             new_product.save_to_db(data, db_operations)
@@ -69,6 +79,7 @@ class Product(PaginatedAPIMixin):
         Method for get product list with pagination by params: dict and/or title: str
         :return:
         """
+        mongo = MongoClient(Config.MONGO_URI)
         page = request.args.get('page', DEFAULT_PAGE, type=int)
         per_page = min(request.args.get('per_page', PER_PAGE_DEFAULT, type=int), PER_PAGE_MAX)
         db_operations = mongo.db.product
@@ -88,7 +99,9 @@ class Product(PaginatedAPIMixin):
         :param value:
         :return:
         """
-        query.update({str(key): str(value)})
+        if value.isdigit():
+            value = float(value)
+        query.update({str(key): value})
 
     @staticmethod
     def get_query_from_data(data):
@@ -99,15 +112,10 @@ class Product(PaginatedAPIMixin):
         """
         query_params = {}
         for key, value in data.items():
-            if key == 'title' and isinstance(value, str) or isinstance(value, float):
+            if key == 'title':
                 Product._set_query_params(query_params, key, value)
-            elif isinstance(value, str) or isinstance(value, float):
+            elif isinstance(value, str):
                 param_key = f'params.{str(key)}'
-                Product._set_query_params(query_params, param_key, value)
-            elif isinstance(value, dict):
-                data_key = next(iter(data[key]))
-                value = str(data[key][data_key])
-                param_key = f'{str(key)}.{str(data_key)}'
                 Product._set_query_params(query_params, param_key, value)
         return query_params
 
@@ -118,6 +126,7 @@ class Product(PaginatedAPIMixin):
         :param product_id:
         :return:
         """
+        mongo = MongoClient(Config.MONGO_URI)
         if ObjectId().is_valid(product_id) is False:
             return bad_request(t['invalid_id'])
         db_operations = mongo.db.product

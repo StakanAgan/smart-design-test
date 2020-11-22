@@ -1,15 +1,10 @@
-import datetime
 import unittest
-import os
+from json import dumps
 
-from flask_pymongo import PyMongo
-from mongomock import ObjectId as mockup_oid
+from mockupdb import MockupDB, go
 
 from app import create_app
-
-from mockupdb import MockupDB, go, Command
-from pymongo import MongoClient
-from json import dumps
+from config import Config
 
 
 class TestProductController(unittest.TestCase):
@@ -18,10 +13,9 @@ class TestProductController(unittest.TestCase):
         self.server = MockupDB(auto_ismaster=True, verbose=True)
         self.server.run()
 
-        class TestConfig:
-            MONGO_URI = self.server.uri
+        Config.MONGO_URI = self.server.uri
 
-        app = create_app(TestConfig)
+        app = create_app()
         self.app = app.test_client()
 
     @classmethod
@@ -38,8 +32,16 @@ class TestProductController(unittest.TestCase):
             }
 
         }
-        headers = [('Content-Type', 'application/json')]
-        with self.app as test_app:
-            response = test_app.post('/api/product', json=to_insert, headers=headers)
 
-        self.assertEqual(response.status_code, 201)
+        headers = [('Content-Type', 'application/json')]
+
+        go(self.app.post, '/api/product', data=dumps(to_insert), headers=headers)
+        rv = self.server.receives()
+        new_object_id = str(rv.docs[0]['documents'][0]['_id'])
+        go(self.app.get, f'/api/product/{new_object_id}', headers=headers)
+        request = self.server.receives()
+        request_status = request.ok(cursor={'id': new_object_id, 'firstBatch': [
+            to_insert
+        ]})
+        self.assertTrue(request_status)
+
