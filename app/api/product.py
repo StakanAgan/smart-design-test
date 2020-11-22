@@ -1,5 +1,3 @@
-from flask import request
-
 from app.api import bp
 from app.models import Product
 
@@ -7,8 +5,7 @@ from app.models import Product
 @bp.route('/product', methods=['POST'])
 def create_product():
     """
-    Method for create new product
-    parameters:
+    Method for create new product by title: str, description: str and params: dict
 
     :return:
     """
