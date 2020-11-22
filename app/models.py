@@ -99,9 +99,7 @@ class Product(PaginatedAPIMixin):
         :param value:
         :return:
         """
-        if value.isdigit():
-            value = float(value)
-        query.update({str(key): value})
+        query.update({str(key): str(value)})
 
     @staticmethod
     def get_query_from_data(data):
@@ -140,9 +138,9 @@ class Product(PaginatedAPIMixin):
         :return:
         """
         data = OrderedDict({
-            'title': self.title,
-            'description': self.description,
-            'params': {key: value for key, value in self.params.items()}
+            'title': str(self.title),
+            'description': str(self.description),
+            'params': {str(key): str(value) for key, value in self.params.items()}
         })
         if self._id:
             data.update({"id": str(self._id)})
